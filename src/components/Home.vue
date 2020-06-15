@@ -8,15 +8,20 @@
             </h2>
             <div class="form-wrapper">
                 <form @submit="onSubmit" class="form">
-                    <input type="text" :class="this.value !== '' ? 'text-input active-text-input' : 'text-input'"  v-model="inputValue">
-                    <input type="submit" v-if="!isLoading" value="Submit" :class="'submit-button'" :disabled="this.value === ''">
+                    <input type="text" :class="this.value !== '' ? 'text-input active-text-input' : 'text-input'"
+                           v-model="inputValue">
+                    <label for="title-lightmode" class="row" title="Switches the title background to white and the text to black">
+                        <input type="checkbox" id="title-lightmode" class="checkbox" v-model="lightMode">
+                        <p>Title light mode</p>
+                    </label>
+
+                    <input type="submit" v-if="!isLoading" value="Submit" :class="'submit-button'"
+                           :disabled="this.value === ''">
                     <div v-if="isLoading" class="lds-dual-ring"></div>
                 </form>
                 <p class="error-message">{{this.errorMessage}}</p>
 
             </div>
-
-
 
 
             <Canvas ref="canvas" width="600" height="600"></Canvas>
@@ -51,9 +56,10 @@
             return {
                 value: '',
                 errorMessage: '',
-                textBlockHeight: 75,
+                textBlockHeight: 33,
                 characterLimitPerLine: '55',
-                isLoading: false
+                isLoading: false,
+                lightMode: false
             }
 
         },
@@ -84,30 +90,35 @@
                     //let ratio = imageObj.width / imageObj.height;
 
                     context.canvas.width = imageObj.width;
-                    context.canvas.height = imageObj.height + this.textBlockHeight;
-
-                    context.drawImage(imageObj, 0, this.textBlockHeight);
-
-                    context.fillRect(0, 0, imageObj.width, this.textBlockHeight);
 
 
-                    context.font = "26px Arial"
-                    context.fillStyle = 'white';
                     //context.textAlign = 'center';
 
                     if (data.title.length > this.characterLimitPerLine) {
-                        //console.log(this.getSpaces(data.title));
-                        let newTitle = this.insertLineBreak(data.title, this.getSpaces(data.title));
+                        let newTitle = this.insertLineBreak(data.title);
 
-                        for (let i = 0; i < newTitle.length; i++){
+                        context.canvas.height = imageObj.height + (this.textBlockHeight * newTitle.length);
+                        context.drawImage(imageObj, 0, (this.textBlockHeight * newTitle.length));
+
+                        context.fillStyle = !this.lightMode ? 'black' : 'white';
+                        context.fillRect(0, 0, imageObj.width, (this.textBlockHeight * newTitle.length));
+
+
+                        context.font = "26px Arial";
+                        context.fillStyle = this.lightMode ? 'black' : 'white';
+
+                        for (let i = 0; i < newTitle.length; i++) {
                             context.fillText(newTitle[i], 10, 30 * (i + 1));
                         }
-
-                        newTitle.forEach((string) => {
-                            console.log(string);
-                        });
-
                     } else {
+                        context.canvas.height = imageObj.height + (this.textBlockHeight * 2);
+                        context.drawImage(imageObj, 0, (this.textBlockHeight * 2));
+
+                        context.fillStyle = !this.lightMode ? 'black' : 'white';
+                        context.fillRect(0, 0, imageObj.width, (this.textBlockHeight * 2));
+
+                        context.font = "26px Arial";
+                        context.fillStyle = this.lightMode ? 'black' : 'white';
                         context.fillText(data.title, 10, 45);
                     }
 
@@ -125,24 +136,56 @@
             getSpaces(string) {
                 let spaces = [];
 
-                for (let i = 0; i < string.length; i++){
+                for (let i = 0; i < string.length; i++) {
                     //console.log(string[i]);
-                    if(string[i] === ' '){
+                    if (string[i] === ' ') {
                         spaces.push(i);
                     }
                 }
+
                 return spaces;
             },
-            insertLineBreak(string, spaces){
-                let closest = spaces.reduce((prev, curr) => {
+            insertLineBreak(string) {
+                let lines = Math.ceil(string.length / this.characterLimitPerLine);
+                let currentString = string;
+                let returnString = [];
+
+                //console.log(currentString);
+
+
+                for (let i = 0; i < lines; i++) {
+                    let spaces = this.getSpaces(currentString);
+
+                    let closest = spaces.reduce((prev, curr) => {
+                        return (Math.abs(curr - this.characterLimitPerLine) < Math.abs(prev - this.characterLimitPerLine) ? curr : prev);
+                    });
+
+                    if (currentString.length >= this.characterLimitPerLine) {
+                        let newLine = currentString.slice(0, closest + 1);
+                        newLine = newLine.trim();
+                        returnString.push(newLine); //Adding the sliced string to the return array
+
+
+                        currentString = currentString.substring(closest + 1, currentString.length);
+                    } else {
+                        returnString.push(currentString);
+                    }
+                    //let temp = [currentString.slice(0, closest + 1), currentString.slice(closest + 1, currentString.length-1)];
+
+                    //console.log(newLine, ' - ', currentString);
+
+                }
+
+                //console.log(returnString);
+
+                /*let closest = spaces.reduce((prev, curr) => {
                     return (Math.abs(curr - this.characterLimitPerLine) < Math.abs(prev - this.characterLimitPerLine) ? curr : prev);
                 });
 
-
-
+                returnString = [string.slice(0, closest + 1), string.slice(closest + 1, string.length-1)];*/
                 //console.log("closest: " + closest);
-                return [string.slice(0, closest + 1), string.slice(closest + 1, string.length-1)];
-             },
+                return returnString;
+            },
             setErrorMessage(message) {
                 this.errorMessage = message;
                 setTimeout(() => {
@@ -210,6 +253,60 @@
         margin-top: 0 !important;
     }
 
+    label {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    p {
+        margin: 0;
+    }
+
+    label p {
+        display: flex;
+        align-self: center;
+        font-family: UbuntuLight, sans-serif;
+    }
+
+    .checkbox {
+        position: relative;
+        appearance: none;
+        height: 20px;
+        width: 40px;
+        margin-right: 10px;
+
+        border-radius: 20px;
+
+        border: 1px solid #ccc;
+        cursor: pointer;
+
+        transition: 0.2s border-color;
+    }
+
+    .checkbox:after {
+        position: absolute;
+        content: '';
+        height: 16px;
+        width: 16px;
+        left: 1px;
+        top: 1px;
+        border-radius: 20px;
+        background: #ccc;
+
+        transition: 0.2s left, 0.2s background-color;
+    }
+
+    .checkbox:checked {
+        border-color: #2c3e50;
+    }
+
+    .checkbox:checked:after {
+        left: 20px;
+        background-color: #2c3e50;
+    }
+
+
     .meme-img {
         max-width: 700px;
         width: 100%;
@@ -256,7 +353,7 @@
         display: flex;
     }
 
-    .form-wrapper{
+    .form-wrapper {
         width: 100%;
         flex-direction: column;
         align-items: center;
@@ -266,6 +363,7 @@
         width: 100%;
         flex-direction: column;
         align-items: center;
+        margin-bottom: 30px;
     }
 
     .text-input {
@@ -282,7 +380,7 @@
     .active-text-input {
         border-color: #2c3e50;
     }
-    
+
     .text-input:focus {
         border-color: #2c3e50;
     }
@@ -310,13 +408,13 @@
     }
 
 
-
     .lds-dual-ring {
         display: inline-block;
         width: 64px;
         height: 64px;
         margin-top: 15px;
     }
+
     .lds-dual-ring:after {
         content: " ";
         display: block;
@@ -328,6 +426,7 @@
         border-color: #2c3e50 transparent #2c3e50 transparent;
         animation: lds-dual-ring 1.2s linear infinite;
     }
+
     @keyframes lds-dual-ring {
         0% {
             transform: rotate(0deg);
@@ -360,7 +459,7 @@
         display: inline;
         color: #f2f2f2;
     }
-    
+
     @media screen and (max-width: 500px) {
         .page-subtitle {
             font-size: 20px;
@@ -370,9 +469,7 @@
             margin-top: 15px;
         }
     }
-    
-    
-    
+
 
     @font-face {
         font-family: UbuntuRegular;
