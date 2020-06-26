@@ -72,7 +72,7 @@
                     axios.post('https://reddit-meme-fixer.herokuapp.com/meme', {
                         data: url
                     }).then((response) => {
-                        //console.log(response.data);
+                        console.log(response.data.title.length);
                         this.displayOnCanvas(response.data);
                         //this.$refs.img.src = response.data.img;
                     });
@@ -155,35 +155,29 @@
 
                 for (let i = 0; i < lines; i++) {
                     let spaces = this.getSpaces(currentString);
+                    console.log("spaces:", spaces);
 
-                    let closest = spaces.reduce((prev, curr) => {
-                        return (Math.abs(curr - this.characterLimitPerLine) < Math.abs(prev - this.characterLimitPerLine) ? curr : prev);
-                    });
+                    if(spaces.length > 0) {
+                        let closest = spaces.reduce((prev, curr) => {
+                            return (Math.abs(curr - this.characterLimitPerLine) < Math.abs(prev - this.characterLimitPerLine) ? curr : prev);
+                        });
 
-                    if (currentString.length >= this.characterLimitPerLine) {
-                        let newLine = currentString.slice(0, closest + 1);
-                        newLine = newLine.trim();
-                        returnString.push(newLine); //Adding the sliced string to the return array
+                        if (currentString.length >= this.characterLimitPerLine) {
+                            let newLine = currentString.slice(0, closest + 1);
+                            newLine = newLine.trim();
+                            returnString.push(newLine); //Adding the sliced string to the return array
 
 
-                        currentString = currentString.substring(closest + 1, currentString.length);
+                            currentString = currentString.substring(closest , currentString.length);
+                        } else {
+                            returnString.push(currentString.trim());
+                        }
                     } else {
                         returnString.push(currentString);
                     }
-                    //let temp = [currentString.slice(0, closest + 1), currentString.slice(closest + 1, currentString.length-1)];
-
-                    //console.log(newLine, ' - ', currentString);
 
                 }
 
-                //console.log(returnString);
-
-                /*let closest = spaces.reduce((prev, curr) => {
-                    return (Math.abs(curr - this.characterLimitPerLine) < Math.abs(prev - this.characterLimitPerLine) ? curr : prev);
-                });
-
-                returnString = [string.slice(0, closest + 1), string.slice(closest + 1, string.length-1)];*/
-                //console.log("closest: " + closest);
                 return returnString;
             },
             setErrorMessage(message) {
@@ -320,7 +314,7 @@
         width: 100vw;
         top: 0;
         left: 0;
-        background: #50312c;
+        background: #FF4500;
         color: #f2f2f2;
         margin: 0;
         padding: 20px 0;
@@ -443,7 +437,7 @@
         left: 0;
         height: 40px;
         width: 100%;
-        background: #50312c;
+        background: #FF4500;
         justify-content: center;
         align-items: center;
 
